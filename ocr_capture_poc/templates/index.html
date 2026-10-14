@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>OCR Inspection POC</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <main class="page">
+        <section class="card">
+            <div class="header">
+                <div>
+                    <h1>OCR Inspection POC</h1>
+                    <p>
+                        PaddleOCR + PyTorch preprocessing + FastAPI
+                    </p>
+                </div>
+
+                <div class="status">
+                    <span>OCR: {{ ocr_device }}</span>
+                    <span>Source: {{ source }}</span>
+                </div>
+            </div>
+
+            <div class="layout">
+                <section class="panel">
+                    <h2>Live Feed</h2>
+
+                    <div class="feed-wrap">
+                        <img
+                            id="feed"
+                            src="/feed"
+                            alt="Camera / fallback video feed"
+                        >
+                    </div>
+
+                    <div class="controls">
+                        <label>
+                            Expected digit sequence
+                            <input
+                                id="expected-sequence"
+                                type="text"
+                                value="{{ default_sequence }}"
+                                inputmode="numeric"
+                                placeholder="e.g. 123456789"
+                            >
+                        </label>
+
+                        <label>
+                            Expected product code
+                            <input
+                                id="expected-product-code"
+                                type="text"
+                                placeholder="e.g. 1234 5678"
+                            >
+                        </label>
+
+                        <button id="capture-btn">
+                            Capture
+                        </button>
+                    </div>
+                </section>
+
+                <section class="panel result-panel">
+                    <h2>Inspection Result</h2>
+
+                    <div id="result-banner" class="result neutral">
+                        Waiting for capture
+                    </div>
+
+                    <dl class="result-grid">
+                        <div>
+                            <dt>Type</dt>
+                            <dd id="result-type">-</dd>
+                        </div>
+
+                        <div>
+                            <dt>Orientation</dt>
+                            <dd id="result-orientation">-</dd>
+                        </div>
+
+                        <div>
+                            <dt>Detected</dt>
+                            <dd id="result-detected">-</dd>
+                        </div>
+
+                        <div>
+                            <dt>Expected</dt>
+                            <dd id="result-expected">-</dd>
+                        </div>
+
+                        <div class="full">
+                            <dt>Reason</dt>
+                            <dd id="result-reason">-</dd>
+                        </div>
+                    </dl>
+
+                    <div id="capture-image-wrap" class="capture-image-wrap hidden">
+                        <h3>Captured / Annotated</h3>
+                        <img id="capture-image" alt="Annotated capture">
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
