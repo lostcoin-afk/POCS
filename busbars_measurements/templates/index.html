@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ app_title }}</title>
+  <link rel="stylesheet" href="/templates/style.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand-mark">DIM</div>
+    <div class="brand-copy"><div class="eyebrow">VISION INTELLIGENCE / METROLOGY</div><h1>Hardware Dimension Inspector</h1><p>Silhouette · Overall length and width · Circular feature diameter</p></div>
+    <div class="top-status"><span id="connection-dot" class="status-dot"></span><span id="connection-label">DISCONNECTED</span><span class="camera-distance">Working distance <strong>39 cm</strong></span></div>
+  </header>
+
+  <main class="layout">
+    <section class="main-column">
+      <div class="metric-grid">
+        <article class="metric-card metric-length"><span class="metric-label">HORIZONTAL SPAN</span><strong id="length-value">—</strong><span id="length-sub" class="metric-sub">Waiting for silhouette</span></article>
+        <article class="metric-card metric-width"><span class="metric-label">VERTICAL SPAN</span><strong id="width-value">—</strong><span id="width-sub" class="metric-sub">Image-axis silhouette extent</span></article>
+        <article class="metric-card"><span class="metric-label">CIRCULAR FEATURES</span><strong id="circle-count">0</strong><span class="metric-sub">Validated circle candidates</span></article>
+        <article class="metric-card"><span class="metric-label">PROCESSING</span><strong id="processing-ms">—</strong><span class="metric-sub" id="frame-size">Frame size —</span></article>
+      </div>
+
+      <article class="panel live-panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">01 / MEASUREMENT OVERLAY</p><h2>Live frame</h2><p class="panel-description">Green = component boundary and dimension arrows · Red = extended horizontal edge guides · Blue = extended vertical edge guides · Yellow = circular diameters</p></div>
+          <div class="live-actions"><span class="live-pill"><span class="live-dot"></span> LIVE</span><button id="stop-btn" class="button button-quiet" type="button">Stop feed</button></div>
+        </div>
+        <div class="feed-stage" id="feed-stage"><img id="video-feed" src="/video_feed" alt="Live annotated inspection feed" draggable="false"/><div id="feed-placeholder" class="feed-placeholder">Select a video or camera source, then click Start measurement.</div></div>
+        <div class="feed-meta"><span id="source-name">No source selected</span><span id="fps-label">0.0 FPS</span><span id="silhouette-label">Silhouette: not detected</span></div>
+      </article>
+
+      <div class="preview-grid">
+        <article class="panel preview-panel"><div class="panel-heading compact"><div><p class="eyebrow">DIAGNOSTIC A</p><h3>Silhouette mask</h3></div></div><div class="preview-image"><img src="/mask_feed" alt="Extracted silhouette mask" /></div><p class="hint">The object should be white and the background black. Holes may appear filled because this mask represents the outer contour.</p></article>
+        <article class="panel preview-panel"><div class="panel-heading compact"><div><p class="eyebrow">DIAGNOSTIC B</p><h3>Canny edges</h3></div></div><div class="preview-image"><img src="/edge_feed" alt="Canny edge image" /></div><p class="hint">Adjust edge thresholds and blur if the external boundary breaks or the image contains excessive texture edges.</p></article>
+      </div>
+
+      <article class="panel circle-panel linear-panel">
+        <div class="panel-heading"><div><p class="eyebrow">02 / LINE-TO-LINE DIMENSIONS</p><h2>Extended guide-line measurements</h2><p class="panel-description">Red and blue guides extend detected near-horizontal and near-vertical silhouette edges. Green arrows report adjacent guide spacing and the overall horizontal/vertical silhouette spans.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Axis</th><th>Between guides</th><th>Distance (px)</th><th>Calibrated value</th><th>Type</th></tr></thead><tbody id="linear-body"><tr><td colspan="6" class="empty-cell">No guide measurements detected yet.</td></tr></tbody></table></div>
+      </article>
+
+      <article class="panel circle-panel">
+        <div class="panel-heading"><div><p class="eyebrow">03 / CIRCULAR FEATURES</p><h2>Circular feature diameter measurements</h2><p class="panel-description">Diameter is estimated from the detected visible circular boundary. Confirm whether the feature is a hole or a raised boss before treating it as a physical OD.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Center (px)</th><th>Radius (px)</th><th>Diameter (px)</th><th>Diameter (calibrated)</th><th>Contrast</th></tr></thead><tbody id="circles-body"><tr><td colspan="6" class="empty-cell">No circles detected yet.</td></tr></tbody></table></div>
+      </article>
+    </section>
+
+    <aside class="side-column">
+      <article class="panel source-panel">
+        <div class="panel-heading"><div><p class="eyebrow">SOURCE</p><h2>Image acquisition</h2></div><span class="section-index">A</span></div>
+        <label class="field-label" for="source-type">Input source</label>
+        <select id="source-type" class="form-control"><option value="video">Saved video</option><option value="arena">LUCID Arena SDK camera</option><option value="webcam">Webcam / OpenCV</option></select>
+        <div id="video-fields" class="source-fields">
+          <label class="field-label" for="video-path">Video path on server</label><input id="video-path" class="form-control" type="text" placeholder="/data/videos/part.mp4" />
+          <div class="upload-row"><label class="button button-outline" for="video-upload">Upload video</label><input id="video-upload" type="file" accept="video/*,.avi,.mkv,.mov,.mp4" hidden /><span id="upload-status"></span></div>
+          <label class="checkbox-row"><input id="loop-video" type="checkbox" checked /> <span>Loop video when it ends</span></label>
+        </div>
+        <div id="arena-fields" class="source-fields hidden"><label class="field-label" for="arena-serial">Camera serial <span class="optional">optional</span></label><input id="arena-serial" class="form-control" placeholder="Leave blank for first available"/><p class="hint">Arena SDK Python bindings must be installed in this environment.</p></div>
+        <div id="webcam-fields" class="source-fields hidden"><label class="field-label" for="webcam-index">Camera index</label><input id="webcam-index" class="form-control" type="number" min="0" value="0"/></div>
+        <div class="button-row"><button id="start-btn" class="button button-primary" type="button">Start measurement</button><button id="reset-btn" class="button button-outline" type="button">Reset view</button></div>
+        <div id="source-message" class="message-box" role="status">Choose a source and start measurement.</div>
+      </article>
+
+      <article class="panel roi-panel">
+        <div class="panel-heading"><div><p class="eyebrow">LIVE REGION OF INTEREST</p><h2>Top measurement limit</h2></div><span class="section-index">ROI</span></div>
+        <p class="hint">Rows above the green cutoff are ignored by segmentation, line detection, circle detection, and measurements. The processing region spans the full width and continues to the bottom of the frame.</p>
+        <div class="setting"><div class="setting-title"><label for="roi-top-pct">Top cutoff (% image height)</label><output id="roi-top-pct-out">0%</output></div><input id="roi-top-pct" type="range" min="0" max="80" step="1" value="0"/></div>
+        <label class="checkbox-row"><input id="roi-drag-enable" type="checkbox"/> <span>Adjust cutoff by dragging on the live image</span></label>
+        <div class="calibration-state" id="roi-state">ROI starts at the top of the frame (0%).</div>
+      </article>
+
+      <article class="panel calibration-panel">
+        <div class="panel-heading"><div><p class="eyebrow">PHYSICAL SCALE</p><h2>Pixel-to-mm calibration</h2></div><span class="section-index">B</span></div>
+        <div class="warning-note"><strong>39 cm distance is not a scale calibration.</strong><br/>Working distance and 1900 × 1200 resolution alone do not reveal mm per pixel. Calibrate using a known dimension on the same plane as the part.</div>
+        <label class="field-label" for="known-px">That known dimension in pixels</label><input id="known-px" class="form-control" type="number" min="0.01" step="any" placeholder="e.g. measured span: 420" />
+        <label class="field-label" for="known-mm">Its actual length (mm)</label><input id="known-mm" class="form-control" type="number" min="0.01" step="any" placeholder="e.g. 50" />
+        <button id="apply-calibration" class="button button-primary button-full" type="button">Apply calibration</button>
+        <button id="clear-calibration" class="button button-quiet button-full" type="button">Clear calibration (pixels only)</button>
+        <div class="calibration-state" id="calibration-state">Uncalibrated · measurements in pixels</div>
+        <p class="hint">Use a known dimension measured in this frame (for example, a calibrated gauge or known hole diameter). Place the reference and inspected feature on the same surface plane.</p>
+      </article>
+
+      <article class="panel settings-panel">
+        <div class="panel-heading"><div><p class="eyebrow">PROCESSING</p><h2>Segmentation & circle settings</h2></div><span class="section-index">C</span></div>
+        <div class="setting"><div class="setting-title"><label for="canny-low">Canny low</label><output id="canny-low-out">45</output></div><input id="canny-low" type="range" min="0" max="254" value="45"/></div>
+        <div class="setting"><div class="setting-title"><label for="canny-high">Canny high</label><output id="canny-high-out">130</output></div><input id="canny-high" type="range" min="1" max="255" value="130"/></div>
+        <div class="setting"><div class="setting-title"><label for="blur-kernel">Gaussian blur kernel</label><output id="blur-kernel-out">3</output></div><input id="blur-kernel" type="range" min="1" max="15" step="2" value="5"/></div>
+        <div class="setting"><div class="setting-title"><label for="morph-kernel">Silhouette morphology</label><output id="morph-kernel-out">5</output></div><input id="morph-kernel" type="range" min="1" max="21" step="2" value="5"/></div>
+        <div class="setting"><div class="setting-title"><label for="min-area">Minimum area ratio</label><output id="min-area-out">0.015</output></div><input id="min-area" type="range" min="0.001" max="0.10" step="0.001" value="0.015"/></div>
+        <div class="setting"><div class="setting-title"><label for="circle-min-radius">Minimum circle radius (px)</label><output id="circle-min-radius-out">6</output></div><input id="circle-min-radius" type="range" min="2" max="100" value="6"/></div>
+        <div class="setting"><div class="setting-title"><label for="circle-max-radius">Maximum circle radius (px)</label><output id="circle-max-radius-out">140</output></div><input id="circle-max-radius" type="range" min="10" max="400" value="140"/></div>
+        <div class="setting"><div class="setting-title"><label for="circle-min-distance">Minimum distance between circle centers (px)</label><output id="circle-min-distance-out">58</output></div><input id="circle-min-distance" type="range" min="10" max="180" value="58"/></div>
+        <div class="setting"><div class="setting-title"><label for="circle-param2">Circle sensitivity (Hough)</label><output id="circle-param2-out">34</output></div><input id="circle-param2" type="range" min="8" max="80" value="34"/></div>
+        <div class="setting"><div class="setting-title"><label for="circle-contrast">Minimum circle contrast</label><output id="circle-contrast-out">16</output></div><input id="circle-contrast" type="range" min="0" max="60" value="16"/></div>
+        <div class="settings-divider"><span>Extended measurement guides</span></div>
+        <div class="setting"><div class="setting-title"><label for="line-hough-threshold">Line Hough threshold</label><output id="line-hough-threshold-out">55</output></div><input id="line-hough-threshold" type="range" min="10" max="150" value="55"/></div>
+        <div class="setting"><div class="setting-title"><label for="line-min-length">Minimum line segment (px)</label><output id="line-min-length-out">75</output></div><input id="line-min-length" type="range" min="15" max="300" value="75"/></div>
+        <div class="setting"><div class="setting-title"><label for="line-max-gap">Join edge gaps (px)</label><output id="line-max-gap-out">20</output></div><input id="line-max-gap" type="range" min="0" max="100" value="20"/></div>
+        <div class="setting"><div class="setting-title"><label for="axis-tolerance-deg">Axis tolerance (degrees)</label><output id="axis-tolerance-deg-out">10</output></div><input id="axis-tolerance-deg" type="range" min="1" max="30" value="10"/></div>
+        <div class="setting"><div class="setting-title"><label for="line-merge-px">Merge parallel guides (px)</label><output id="line-merge-px-out">13</output></div><input id="line-merge-px" type="range" min="1" max="50" value="13"/></div>
+        <div class="setting"><div class="setting-title"><label for="max-axis-lines">Max guide lines per axis</label><output id="max-axis-lines-out">8</output></div><input id="max-axis-lines" type="range" min="2" max="16" value="8"/></div>
+        <div class="setting"><div class="setting-title"><label for="min-dimension-px">Minimum reported gap (px)</label><output id="min-dimension-px-out">18</output></div><input id="min-dimension-px" type="range" min="1" max="150" value="18"/></div>
+        <button id="settings-reset" class="button button-outline button-full" type="button">Reset processing settings</button>
+        <p class="hint">If guide lines are missed, reduce Hough threshold or minimum segment length. If many false guides appear, raise minimum segment length or lower axis tolerance. Reduce merge tolerance if separate parallel edges are being combined.</p>
+      </article>
+
+      <article class="panel diagnostics-panel">
+        <div class="panel-heading"><div><p class="eyebrow">DIAGNOSTICS</p><h2>Frame statistics</h2></div></div>
+        <div class="diagnostic-row"><span>Image resolution</span><strong id="diag-resolution">—</strong></div>
+        <div class="diagnostic-row"><span>Silhouette area</span><strong id="diag-area">—</strong></div>
+        <div class="diagnostic-row"><span>Segmentation method</span><strong id="diag-method">—</strong></div>
+        <div class="diagnostic-row"><span>Edge pixels</span><strong id="diag-edges">—</strong></div>
+        <div class="diagnostic-row"><span>Horizontal guide lines</span><strong id="diag-h-guides">—</strong></div>
+        <div class="diagnostic-row"><span>Vertical guide lines</span><strong id="diag-v-guides">—</strong></div>
+        <div class="diagnostic-row"><span>Linear measurements</span><strong id="diag-linear-count">—</strong></div>
+        <div class="diagnostic-row"><span>FPS</span><strong id="diag-fps">—</strong></div>
+        <div class="diagnostic-row"><span>Processing time</span><strong id="diag-time">—</strong></div>
+      </article>
+    </aside>
+  </main>
+  <footer><span>Hardware Dimension Inspector · FastAPI + OpenCV</span><span>Physical dimensions require calibration and planar setup.</span></footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/templates/app.js"></script>
+</body>
+</html>
